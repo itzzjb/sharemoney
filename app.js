@@ -1,6 +1,8 @@
 // Data storage
 const entries = [];
 const participants = new Set();
+let currency = 'LKR';
+let currencySymbol = '₨.';
 
 // DOM elements
 const entryForm = document.getElementById('entry-form');
@@ -10,6 +12,21 @@ const participantsList = document.getElementById('participants-list');
 const calculateBtn = document.getElementById('calculate-btn');
 const resultsList = document.getElementById('results-list');
 const payerSelect = document.getElementById('payer');
+const currencyToggle = document.getElementById('currency-toggle');
+
+// Currency toggle handler
+if (currencyToggle) {
+    currencyToggle.addEventListener('change', function() {
+        currency = this.value;
+        if (currency === 'LKR') currencySymbol = '₨.';
+        else if (currency === 'USD') currencySymbol = '$';
+        else if (currency === 'EUR') currencySymbol = '€';
+        renderEntries();
+        renderParticipants();
+        // If results are visible, re-calculate
+        if (resultsList.children.length > 0) calculateBtn.click();
+    });
+}
 
 // Add entry
 
@@ -65,7 +82,7 @@ function renderEntries() {
             });
         } else {
             li.innerHTML = `
-                <span>${entry.payer} paid $${entry.amount.toFixed(2)} for ${entry.description}</span>
+                <span>${entry.payer} paid ${currencySymbol}${entry.amount.toFixed(2)} for ${entry.description}</span>
                 <span class="icon-btn edit-entry" title="Edit" data-idx="${idx}">&#9998;</span>
                 <span class="icon-btn delete-entry" title="Delete" data-idx="${idx}">&#128465;</span>
             `;
@@ -248,7 +265,7 @@ calculateBtn.addEventListener('click', function() {
     } else {
         transactions.forEach(tx => {
             const li = document.createElement('li');
-            li.textContent = `${tx.from} needs to pay ${tx.to}: $${tx.amount.toFixed(2)}`;
+            li.textContent = `${tx.from} needs to pay ${tx.to}: ${currencySymbol}${tx.amount.toFixed(2)}`;
             resultsList.appendChild(li);
         });
     }
@@ -258,13 +275,13 @@ calculateBtn.addEventListener('click', function() {
     summaryDiv.className = 'summary-box';
     summaryDiv.innerHTML = `
         <h3>Summary</h3>
-        <p><strong>Total spent:</strong> $${totalSpent.toFixed(2)}</p>
-        <p><strong>Each should pay:</strong> $${share.toFixed(2)}</p>
+        <p><strong>Total spent:</strong> ${currencySymbol}${totalSpent.toFixed(2)}</p>
+        <p><strong>Each should pay:</strong> ${currencySymbol}${share.toFixed(2)}</p>
         <ul>
             ${Object.keys(balances).map(name => {
                 let status = '';
-                if (balances[name] > 0.01) status = `has owed $${balances[name].toFixed(2)}`;
-                else if (balances[name] < -0.01) status = `owes $${(-balances[name]).toFixed(2)}`;
+                if (balances[name] > 0.01) status = `has owed ${currencySymbol}${balances[name].toFixed(2)}`;
+                else if (balances[name] < -0.01) status = `owes ${currencySymbol}${(-balances[name]).toFixed(2)}`;
                 else status = 'is settled up';
                 return `<li><strong>${name}</strong> ${status}</li>`;
             }).join('')}
@@ -283,7 +300,7 @@ calculateBtn.addEventListener('click', function() {
         data: {
             labels: labels,
             datasets: [{
-                label: 'Net Balance ($)',
+                label: `Net Balance (${currencySymbol})`,
                 data: data,
                 backgroundColor: backgroundColors,
                 borderRadius: 6,
@@ -295,7 +312,7 @@ calculateBtn.addEventListener('click', function() {
                 tooltip: {
                     callbacks: {
                         label: function(context) {
-                            return `${context.dataset.label}: $${context.parsed.y.toFixed(2)}`;
+                            return `${context.dataset.label}: ${currencySymbol}${context.parsed.y.toFixed(2)}`;
                         }
                     }
                 }
@@ -304,7 +321,7 @@ calculateBtn.addEventListener('click', function() {
                 y: {
                     beginAtZero: true,
                     grid: { color: '#e3f0ff' },
-                    title: { display: true, text: 'Net Balance ($)' }
+                    title: { display: true, text: `Net Balance (${currencySymbol})` }
                 },
                 x: {
                     grid: { color: '#f6fbff' }

@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Share Money with Friends</title>
     <link rel="stylesheet" href="style.css">
+    <!-- Favicons -->
+    <link rel="apple-touch-icon" sizes="180x180" href="favicon_io/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon_io/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon_io/favicon-16x16.png">
+    <link rel="manifest" href="favicon_io/site.webmanifest">
+    <link rel="shortcut icon" href="favicon_io/favicon.ico">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
@@ -32,6 +38,14 @@
         </section>
         <section id="results-section">
             <h2>Results</h2>
+            <div style="margin-bottom: 10px;">
+                <label for="currency-toggle"><strong>Currency:</strong></label>
+                <select id="currency-toggle">
+                    <option value="LKR" selected>LKR (₨)</option>
+                    <option value="USD">USD ($)</option>
+                    <option value="EUR">EUR (€)</option>
+                </select>
+            </div>
             <button id="calculate-btn">Calculate Balances</button>
             <ul id="results-list"></ul>
             <div id="summary-section"></div>
