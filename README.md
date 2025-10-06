@@ -1,6 +1,6 @@
 # ShareMoney
 
-ShareMoney is a simple web application. This project includes the following files:
+ShareMoney is a simple static web application. This project includes the following files:
 
 - `app.js`: Main JavaScript logic for the app
 - `index.html`: The main HTML file
