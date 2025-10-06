@@ -1,3 +1,35 @@
+/* Inline participant edit input */
+.edit-participant-input {
+    font-size: 1em;
+    padding: 2px 6px;
+    border: 1px solid #b3d8f8;
+    border-radius: 4px;
+    margin-left: 0;
+    margin-right: 8px;
+    width: 120px;
+    outline: none;
+    color: #174a6c;
+    background: #f6fbff;
+}
+/* Small icon-like edit/delete controls */
+.icon-btn {
+    display: inline-block;
+    margin-left: 8px;
+    color: #2176ae;
+    font-size: 1.05em;
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 2px 4px;
+    border-radius: 3px;
+    transition: background 0.15s, color 0.15s;
+    vertical-align: middle;
+    line-height: 1;
+}
+.icon-btn:hover {
+    background: #e3f0ff;
+    color: #174a6c;
+}
 /* Footer styling */
 .footer {
     text-align: center;
