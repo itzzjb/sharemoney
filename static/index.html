@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Share Money with Friends</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Share Money with Friends</h1>
+        <section id="participants-section">
+            <h2>Add Participants</h2>
+            <form id="participants-form">
+                <input type="text" id="participant-name" placeholder="Participant name" required>
+                <button type="submit">Add Participant</button>
+            </form>
+            <ul id="participants-list"></ul>
+        </section>
+        <section id="entry-section">
+            <h2>Add Expense Entry</h2>
+            <form id="entry-form">
+                <input type="text" id="description" placeholder="Description" required>
+                <input type="number" id="amount" placeholder="Amount" min="0.01" step="0.01" required>
+                <select id="payer" required>
+                    <option value="" disabled selected>Select payer</option>
+                </select>
+                <button type="submit">Add Entry</button>
+            </form>
+            <ul id="entries-list"></ul>
+        </section>
+        <section id="results-section">
+            <h2>Results</h2>
+            <button id="calculate-btn">Calculate Balances</button>
+            <ul id="results-list"></ul>
+            <div id="summary-section"></div>
+            <div style="margin-top:32px;">
+                <canvas id="balancesChart" width="400" height="220"></canvas>
+            </div>
+        </section>
+    </div>
+    <script src="app.js"></script>
+    <footer class="footer">
+        Made with <span style="color:#e25555;font-size:1.1em;">&#10084;&#65039;</span> by <strong>Januda Bethmin</strong>
+    </footer>
+</body>
+</html>
