@@ -631,6 +631,333 @@ console.log('========================================\n');
 }
 
 // ============================================================
+// ADDITIONAL EDGE-CASE SCENARIOS
+// ============================================================
+
+console.log('\n========================================');
+console.log('SCENARIO 17: Single participant (self-expense)');
+console.log('Only Alice, pays 50, split with herself');
+console.log('========================================\n');
+{
+    const names = ['Alice'];
+    const entries = [
+        { description: 'Solo', amount: 50, payers: [{ name: 'Alice', amount: 50 }], splitAmong: ['Alice'] }
+    ];
+    const r = calculateBalances(names, entries);
+    console.log('Balances:', r.balances);
+    console.log('Transactions:', r.transactions);
+    console.log('');
+
+    assert(r.balances['Alice'] === 0, 'Alice owes nothing (paid = owed)');
+    assert(r.transactions.length === 0, 'No transactions needed');
+}
+
+console.log('\n========================================');
+console.log('SCENARIO 18: No entries at all');
+console.log('3 participants, zero expenses');
+console.log('========================================\n');
+{
+    const names = ['A', 'B', 'C'];
+    const entries = [];
+    const r = calculateBalances(names, entries);
+    console.log('Balances:', r.balances);
+    console.log('Transactions:', r.transactions);
+    console.log('');
+
+    assert(r.balances['A'] === 0, 'A balance is 0');
+    assert(r.balances['B'] === 0, 'B balance is 0');
+    assert(r.balances['C'] === 0, 'C balance is 0');
+    assert(r.transactions.length === 0, 'No transactions');
+    assert(r.totalSpent === 0, 'Total spent is 0');
+}
+
+console.log('\n========================================');
+console.log('SCENARIO 19: Zero-amount expense');
+console.log('A pays 0 for a free item, split among A and B');
+console.log('========================================\n');
+{
+    const names = ['A', 'B'];
+    const entries = [
+        { description: 'Freebie', amount: 0, payers: [{ name: 'A', amount: 0 }], splitAmong: ['A', 'B'] }
+    ];
+    const r = calculateBalances(names, entries);
+    console.log('Balances:', r.balances);
+    console.log('Transactions:', r.transactions);
+    console.log('');
+
+    assert(r.balances['A'] === 0, 'A balance is 0');
+    assert(r.balances['B'] === 0, 'B balance is 0');
+    assert(r.transactions.length === 0, 'No transactions needed');
+}
+
+console.log('\n========================================');
+console.log('SCENARIO 20: Very large amount (precision test)');
+console.log('A pays 999999.99, split among 3');
+console.log('========================================\n');
+{
+    const names = ['A', 'B', 'C'];
+    const entries = [
+        { description: 'Mansion', amount: 999999.99, payers: [{ name: 'A', amount: 999999.99 }], splitAmong: ['A', 'B', 'C'] }
+    ];
+    const r = calculateBalances(names, entries);
+    console.log('Balances:', r.balances);
+    console.log('Transactions:', r.transactions);
+    console.log('');
+
+    // 999999.99 / 3 = 333333.33
+    // A: 999999.99 - 333333.33 = 666666.66
+    assertClose(r.balances['A'], 666666.66, 'A is owed ~666666.66');
+    assertClose(r.balances['B'], -333333.33, 'B owes ~333333.33');
+    assertClose(r.balances['C'], -333333.33, 'C owes ~333333.33');
+    assertBalancesZero(r.balances, 'Balances sum to ~0');
+    assertSettlementBalanced(r.transactions, r.balances, 'Settlement covers all debts');
+}
+
+console.log('\n========================================');
+console.log('SCENARIO 21: Payer overpays (payer total > entry amount)');
+console.log('Entry is 100 but A says they paid 60, B says 60 = 120 total');
+console.log('========================================\n');
+{
+    const names = ['A', 'B', 'C'];
+    const entries = [
+        {
+            description: 'Overpay', amount: 100,
+            payers: [{ name: 'A', amount: 60 }, { name: 'B', amount: 60 }],
+            splitAmong: ['A', 'B', 'C']
+        }
+    ];
+    const r = calculateBalances(names, entries);
+    console.log('Balances:', r.balances);
+    console.log('Transactions:', r.transactions);
+    console.log('');
+
+    // paid: A=60, B=60.  owes: 100/3 = 33.33 each
+    // A: 60-33.33=26.67, B: 60-33.33=26.67, C: 0-33.33=-33.33
+    // Sum of balances = 26.67+26.67-33.33 = 20.01 (non-zero because payers overpaid)
+    // The logic still produces balances — this is a data integrity edge case
+    // Verify it doesn't crash and produces some output
+    assert(typeof r.balances['A'] === 'number', 'A has numeric balance');
+    assert(typeof r.balances['B'] === 'number', 'B has numeric balance');
+    assert(typeof r.balances['C'] === 'number', 'C has numeric balance');
+    assert(r.balances['C'] < 0, 'C still owes money');
+}
+
+console.log('\n========================================');
+console.log('SCENARIO 22: Circular debts that simplify');
+console.log('A pays 90 split A,B,C; B pays 90 split A,B,C; C pays 90 split A,B,C');
+console.log('========================================\n');
+{
+    const names = ['A', 'B', 'C'];
+    const entries = [
+        { description: 'Lunch', amount: 90, payers: [{ name: 'A', amount: 90 }], splitAmong: ['A', 'B', 'C'] },
+        { description: 'Dinner', amount: 90, payers: [{ name: 'B', amount: 90 }], splitAmong: ['A', 'B', 'C'] },
+        { description: 'Drinks', amount: 90, payers: [{ name: 'C', amount: 90 }], splitAmong: ['A', 'B', 'C'] }
+    ];
+    const r = calculateBalances(names, entries);
+    console.log('Balances:', r.balances);
+    console.log('Transactions:', r.transactions);
+    console.log('');
+
+    // Each paid 90, each owes 30*3 = 90 → all balanced
+    assert(r.balances['A'] === 0, 'A is settled');
+    assert(r.balances['B'] === 0, 'B is settled');
+    assert(r.balances['C'] === 0, 'C is settled');
+    assert(r.transactions.length === 0, 'No transactions needed');
+}
+
+console.log('\n========================================');
+console.log('SCENARIO 23: Asymmetric circular debts');
+console.log('A pays 60 for B; B pays 90 for C; C pays 30 for A');
+console.log('========================================\n');
+{
+    const names = ['A', 'B', 'C'];
+    const entries = [
+        { description: 'Gift1', amount: 60, payers: [{ name: 'A', amount: 60 }], splitAmong: ['B'] },
+        { description: 'Gift2', amount: 90, payers: [{ name: 'B', amount: 90 }], splitAmong: ['C'] },
+        { description: 'Gift3', amount: 30, payers: [{ name: 'C', amount: 30 }], splitAmong: ['A'] }
+    ];
+    const r = calculateBalances(names, entries);
+    console.log('Balances:', r.balances);
+    console.log('Transactions:', r.transactions);
+    console.log('');
+
+    // paid: A=60, B=90, C=30.  owes: A=30, B=60, C=90
+    // A: 60-30=30, B: 90-60=30, C: 30-90=-60
+    assert(r.balances['A'] === 30, 'A is owed 30');
+    assert(r.balances['B'] === 30, 'B is owed 30');
+    assert(r.balances['C'] === -60, 'C owes 60');
+    assertBalancesZero(r.balances, 'Balances sum to 0');
+    assertSettlementBalanced(r.transactions, r.balances, 'Settlement covers all debts');
+}
+
+console.log('\n========================================');
+console.log('SCENARIO 24: Pure gift — one payer, one beneficiary');
+console.log('A pays 200, split only among B');
+console.log('========================================\n');
+{
+    const names = ['A', 'B'];
+    const entries = [
+        { description: 'Gift', amount: 200, payers: [{ name: 'A', amount: 200 }], splitAmong: ['B'] }
+    ];
+    const r = calculateBalances(names, entries);
+    console.log('Balances:', r.balances);
+    console.log('Transactions:', r.transactions);
+    console.log('');
+
+    assert(r.balances['A'] === 200, 'A is owed 200');
+    assert(r.balances['B'] === -200, 'B owes 200');
+    assert(r.transactions.length === 1, '1 transaction');
+    assert(r.transactions[0].from === 'B', 'B pays A');
+    assert(r.transactions[0].to === 'A', 'B pays A');
+    assert(r.transactions[0].amount === 200, 'Amount is 200');
+}
+
+console.log('\n========================================');
+console.log('SCENARIO 25: Large group — 20 people, one payer');
+console.log('Person1 pays 500, split among all 20');
+console.log('========================================\n');
+{
+    const names = Array.from({ length: 20 }, (_, i) => `P${i + 1}`);
+    const entries = [
+        { description: 'Party', amount: 500, payers: [{ name: 'P1', amount: 500 }], splitAmong: names }
+    ];
+    const r = calculateBalances(names, entries);
+    console.log('Balances (P1..P5):', Object.fromEntries(Object.entries(r.balances).slice(0, 5)));
+    console.log('Transactions count:', r.transactions.length);
+    console.log('');
+
+    // 500 / 20 = 25 each. P1: 500-25=475
+    assert(r.balances['P1'] === 475, 'P1 is owed 475');
+    names.slice(1).forEach(name => {
+        assert(r.balances[name] === -25, `${name} owes 25`);
+    });
+    assert(r.transactions.length === 19, '19 transactions');
+    assertBalancesZero(r.balances, 'Balances sum to 0');
+    assertSettlementBalanced(r.transactions, r.balances, 'Settlement covers all debts');
+}
+
+console.log('\n========================================');
+console.log('SCENARIO 26: Many small entries between same pair');
+console.log('A pays 10 for B, five times');
+console.log('========================================\n');
+{
+    const names = ['A', 'B'];
+    const entries = [];
+    for (let i = 0; i < 5; i++) {
+        entries.push({ description: `Item${i + 1}`, amount: 10, payers: [{ name: 'A', amount: 10 }], splitAmong: ['B'] });
+    }
+    const r = calculateBalances(names, entries);
+    console.log('Balances:', r.balances);
+    console.log('Transactions:', r.transactions);
+    console.log('');
+
+    assert(r.balances['A'] === 50, 'A is owed 50');
+    assert(r.balances['B'] === -50, 'B owes 50');
+    assert(r.transactions.length === 1, '1 consolidated transaction');
+    assert(r.transactions[0].amount === 50, 'B pays A 50');
+    assert(r.totalSpent === 50, 'Total spent is 50');
+}
+
+console.log('\n========================================');
+console.log('SCENARIO 27: Split among single person (not the payer)');
+console.log('A pays 75, split only among C (B exists but not in split)');
+console.log('========================================\n');
+{
+    const names = ['A', 'B', 'C'];
+    const entries = [
+        { description: 'Favor', amount: 75, payers: [{ name: 'A', amount: 75 }], splitAmong: ['C'] }
+    ];
+    const r = calculateBalances(names, entries);
+    console.log('Balances:', r.balances);
+    console.log('Transactions:', r.transactions);
+    console.log('');
+
+    assert(r.balances['A'] === 75, 'A is owed 75');
+    assert(r.balances['B'] === 0, 'B is uninvolved');
+    assert(r.balances['C'] === -75, 'C owes 75');
+    assert(r.transactions.length === 1, '1 transaction');
+    assertBalancesZero(r.balances, 'Balances sum to 0');
+}
+
+console.log('\n========================================');
+console.log('SCENARIO 28: Multi-payer where one payer pays a tiny amount');
+console.log('A pays 99.99, B pays 0.01 for 100. Split among A,B,C');
+console.log('========================================\n');
+{
+    const names = ['A', 'B', 'C'];
+    const entries = [
+        {
+            description: 'Almost solo', amount: 100,
+            payers: [{ name: 'A', amount: 99.99 }, { name: 'B', amount: 0.01 }],
+            splitAmong: ['A', 'B', 'C']
+        }
+    ];
+    const r = calculateBalances(names, entries);
+    console.log('Balances:', r.balances);
+    console.log('Transactions:', r.transactions);
+    console.log('');
+
+    // 100/3 = 33.33 each
+    // A: 99.99 - 33.33 = 66.66
+    // B: 0.01 - 33.33 = -33.32
+    // C: 0 - 33.33 = -33.33
+    assertClose(r.balances['A'], 66.66, 'A is owed ~66.66');
+    assertClose(r.balances['B'], -33.32, 'B owes ~33.32');
+    assertClose(r.balances['C'], -33.33, 'C owes ~33.33');
+    assertBalancesZero(r.balances, 'Balances sum to ~0');
+    assertSettlementBalanced(r.transactions, r.balances, 'Settlement covers all debts');
+}
+
+console.log('\n========================================');
+console.log('SCENARIO 29: Mixed entries — some with splitAmong, some without');
+console.log('Entry1: A pays 80, split A+B. Entry2: B pays 60, no splitAmong (defaults to all)');
+console.log('========================================\n');
+{
+    const names = ['A', 'B', 'C'];
+    const entries = [
+        { description: 'Private', amount: 80, payers: [{ name: 'A', amount: 80 }], splitAmong: ['A', 'B'] },
+        { description: 'Group', amount: 60, payers: [{ name: 'B', amount: 60 }], splitAmong: [] } // empty = all
+    ];
+    const r = calculateBalances(names, entries);
+    console.log('Balances:', r.balances);
+    console.log('Transactions:', r.transactions);
+    console.log('');
+
+    // Entry1: 80/2=40 each → A owes 40, B owes 40
+    // Entry2: 60/3=20 each → A owes 20, B owes 20, C owes 20
+    // paid: A=80, B=60
+    // owes: A=60, B=60, C=20
+    // balances: A=20, B=0, C=-20
+    assert(r.balances['A'] === 20, 'A is owed 20');
+    assert(r.balances['B'] === 0, 'B is settled');
+    assert(r.balances['C'] === -20, 'C owes 20');
+    assertBalancesZero(r.balances, 'Balances sum to 0');
+    assertSettlementBalanced(r.transactions, r.balances, 'Settlement covers all debts');
+}
+
+console.log('\n========================================');
+console.log('SCENARIO 30: Decimal amount with 5-way split (precision stress)');
+console.log('A pays 99.99, split among 5 people');
+console.log('========================================\n');
+{
+    const names = ['A', 'B', 'C', 'D', 'E'];
+    const entries = [
+        { description: 'Precision', amount: 99.99, payers: [{ name: 'A', amount: 99.99 }], splitAmong: names }
+    ];
+    const r = calculateBalances(names, entries);
+    console.log('Balances:', r.balances);
+    console.log('Transactions:', r.transactions);
+    console.log('');
+
+    // 99.99 / 5 = 19.998 → 20.00 each rounded
+    // A: 99.99 - 20.00 = 79.99
+    // Others: 0 - 20.00 = -20.00
+    assertClose(r.balances['A'], 79.99, 'A is owed ~79.99');
+    assertBalancesZero(r.balances, 'Balances sum to ~0');
+    assertSettlementBalanced(r.transactions, r.balances, 'Settlement covers all debts');
+}
+
+// ============================================================
 // RESULTS
 // ============================================================
 
