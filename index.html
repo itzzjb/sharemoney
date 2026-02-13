@@ -28,18 +28,33 @@
             <h2>Add Expense Entry</h2>
             <form id="entry-form">
                 <input type="text" id="description" placeholder="Description" required>
-                <input type="number" id="amount" placeholder="Amount" min="0.01" step="0.01" required>
-                <select id="payer" required>
-                    <option value="" disabled selected>Select payer</option>
-                </select>
+                <input type="number" id="amount" placeholder="Total amount" min="0.01" step="0.01" required>
+                <div class="payers-group" id="payers-group">
+                    <div class="split-label">
+                        <span>Paid by:</span>
+                        <span class="select-all-link" id="split-payment-btn">Split equally</span>
+                    </div>
+                    <div class="payers-list" id="payers-list">
+                        <span style="color:#888;font-size:0.88rem;">Add participants first</span>
+                    </div>
+                </div>
+                <div class="split-among-group" id="split-among-group">
+                    <div class="split-label">
+                        <span>Split among:</span>
+                        <span class="select-all-link" id="select-all-toggle">Select All</span>
+                    </div>
+                    <div class="split-checkboxes" id="split-checkboxes">
+                        <span style="color:#888;font-size:0.88rem;">Add participants first</span>
+                    </div>
+                </div>
                 <button type="submit">Add Entry</button>
             </form>
             <ul id="entries-list"></ul>
         </section>
         <section id="results-section">
             <h2>Results</h2>
-            <div style="margin-bottom: 10px;">
-                <label for="currency-toggle"><strong>Currency:</strong></label>
+            <div class="currency-row">
+                <label for="currency-toggle">Currency:</label>
                 <select id="currency-toggle">
                     <option value="LKR" selected>LKR (₨)</option>
                     <option value="USD">USD ($)</option>
@@ -49,8 +64,8 @@
             <button id="calculate-btn">Calculate Balances</button>
             <ul id="results-list"></ul>
             <div id="summary-section"></div>
-            <div style="margin-top:32px;">
-                <canvas id="balancesChart" width="400" height="220"></canvas>
+            <div style="margin-top:24px;">
+                <canvas id="balancesChart"></canvas>
             </div>
         </section>
     </div>
